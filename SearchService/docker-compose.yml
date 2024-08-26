@@ -1,0 +1,14 @@
+version: "3.8"
+
+services:
+  mysql-server:
+    image: mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=1234
+    ports:
+      - "3306:3306"
+
+  myredis:
+    image: redis
+    ports:
+      - "6379:6379"
