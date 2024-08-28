@@ -19,30 +19,6 @@ services:
       timeout: 10s
       retries: 10
 
-  cassandra-node-1:
-    image: cassandra
-    environment:
-      - CASSANDRA_SEEDS=cassandra-node-1
-      - CASSANDRA_CLUSTER_NAME=MyCluster
-      - CASSANDRA_ENDPOINT_SNITCH=GossipingPropertyFileSnitch
-      - CASSANDRA_DC=dc1
-    ports:
-      - "17000:7000"
-      - "17001:7001"
-      - "19042:9042"
-
-  cassandra-node-2:
-    image: cassandra
-    environment:
-      - CASSANDRA_SEEDS=cassandra-node-2
-      - CASSANDRA_CLUSTER_NAME=MyCluster
-      - CASSANDRA_ENDPOINT_SNITCH=GossipingPropertyFileSnitch
-      - CASSANDRA_DC=dc1
-    ports:
-      - "27000:7000"
-      - "27001:7001"
-      - "29042:9042"
-
   myredis:
     image: redis
     hostname: myredis
@@ -61,30 +37,57 @@ services:
       - "3306:3306"
     depends_on:
       - myredis
+  
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_SERVER_ID: 1
+      ZOOKEEPER_CLIENT_PORT: 2181
+    ports:
+      - "22181:2181"
+  
+  kafka1:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper
+    ports:
+      - "19092:19092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      # INTERNAL: docker로 접속하는 IP // EXTERNAL: local로 접속하는 IP
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka1:9092,EXTERNAL://localhost:19092
+      # 내부적인 broker 끼리의 통신
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+
+  kafka2:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper
+    ports:
+      - "19093:19093"
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka2:9092,EXTERNAL://localhost:19093
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+
+  kafka3:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper
+    ports:
+      - "19094:19094"
+    environment:
+      KAFKA_BROKER_ID: 3
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka3:9092,EXTERNAL://localhost:19094
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
 
 # Domain Services
-  member-service:
-    image: member-service
-    ports:
-      - "8081:8080"
-    depends_on:
-      - mysql-server
-
-  payment-service:
-    image: payment-service
-    ports:
-      - "8082:8080"
-    depends_on:
-      - mysql-server
-
-  delivery-service:
-    image: delivery-service
-    ports:
-      - "8083:8080"
-    depends_on:
-      - mysql-server
-
-
   search-service:
     image: search-service
     ports:
@@ -96,12 +99,5 @@ services:
     image: catalog-service
     ports:
       - "8085:8080"
-    depends_on:
-      - mysql-server
-
-  order-service:
-    image: order-service
-    ports:
-      - "8086:8080"
     depends_on:
       - mysql-server
